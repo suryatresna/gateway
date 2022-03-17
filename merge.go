@@ -350,7 +350,8 @@ func mergeDirectivesEqual(previousDefinition *ast.DirectiveDefinition, newDefini
 
 	// make sure the 2 definitions take the same arguments
 	if err := mergeArgumentDefinitionListEqual(previousDefinition.Arguments, newDefinition.Arguments); err != nil {
-		return fmt.Errorf("conflict in argument definitions for directive %s. %s", previousDefinition.Name, err.Error())
+		// return fmt.Errorf("conflict in argument definitions for directive %s. %s", previousDefinition.Name, err.Error())
+		fmt.Printf("conflict in argument definitions for directive %s. %s \n", previousDefinition.Name, err.Error())
 	}
 
 	// the 2 directives can coexist
