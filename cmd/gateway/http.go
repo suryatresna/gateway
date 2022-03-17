@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/nautilus/gateway"
 	"github.com/nautilus/graphql"
+	"github.com/suryatresna/gateway"
 )
 
 func ListenAndServe(services []string) {
