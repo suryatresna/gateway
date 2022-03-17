@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -331,6 +332,11 @@ func mergeUnions(schema *ast.Schema, previousDefinition *ast.Definition, newDefi
 func mergeDirectivesEqual(previousDefinition *ast.DirectiveDefinition, newDefinition *ast.DirectiveDefinition) error {
 	// currently, the only meaning to merging directives is to ignore the second one as long as it has the same definition
 	// as the first
+	prevSchemaOutString, _ := json.MarshalIndent(previousDefinition, "", "\t")
+	newSchemaOutString, _ := json.MarshalIndent(newDefinition, "", "\t")
+
+	fmt.Println("[DEBUG][PREV] ", string(prevSchemaOutString))
+	fmt.Println("[DEBUG][NEW] ", string(newSchemaOutString))
 
 	// if the 2 descriptions don't match
 	if previousDefinition.Description != newDefinition.Description {
@@ -339,15 +345,11 @@ func mergeDirectivesEqual(previousDefinition *ast.DirectiveDefinition, newDefini
 
 	// make sure the 2 directives can be placed on the same locations
 	if err := mergeDirectiveLocationsEqual(previousDefinition.Locations, newDefinition.Locations); err != nil {
-		fmt.Println("[DEBUG] prev locations: ", previousDefinition.Locations)
-		fmt.Println("[DEBUG] new locations: ", newDefinition.Locations)
 		return fmt.Errorf("conflict in locations for directive %s. %s", previousDefinition.Name, err.Error())
 	}
 
 	// make sure the 2 definitions take the same arguments
 	if err := mergeArgumentDefinitionListEqual(previousDefinition.Arguments, newDefinition.Arguments); err != nil {
-		fmt.Println("[DEBUG] prev Arguments: ", previousDefinition.Arguments)
-		fmt.Println("[DEBUG] new Arguments: ", newDefinition.Arguments)
 		return fmt.Errorf("conflict in argument definitions for directive %s. %s", previousDefinition.Name, err.Error())
 	}
 
