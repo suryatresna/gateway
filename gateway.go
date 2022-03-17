@@ -19,6 +19,7 @@ type Gateway struct {
 	schema             *ast.Schema
 	planner            QueryPlanner
 	executor           Executor
+	logger             Logger
 	merger             Merger
 	middlewares        MiddlewareList
 	queryFields        []*QueryField
@@ -79,6 +80,7 @@ func (g *Gateway) Execute(ctx *RequestContext, plans QueryPlanList) (map[string]
 
 	// build up the execution context
 	executionContext := &ExecutionContext{
+		logger:             g.logger,
 		RequestContext:     ctx.Context,
 		RequestMiddlewares: g.requestMiddlewares,
 		Plan:               plan,
@@ -106,9 +108,20 @@ func (g *Gateway) Execute(ctx *RequestContext, plans QueryPlanList) (map[string]
 	return result, nil
 }
 
-func (g *Gateway) internalSchema() *ast.Schema {
+func (g *Gateway) internalSchema() (*ast.Schema, error) {
 	// we start off with the internal schema
-	schema := internalSchema
+	schema, err := graphql.LoadSchema(`
+		interface Node {
+			id: ID!
+		}
+
+		type Query {
+			node(id: ID!): Node
+		}
+	`)
+	if schema == nil {
+		return nil, fmt.Errorf("Syntax error in schema string: %s", err.Error())
+	}
 
 	// then we have to add any query fields we have
 	for _, field := range g.queryFields {
@@ -120,7 +133,7 @@ func (g *Gateway) internalSchema() *ast.Schema {
 	}
 
 	// we're done
-	return schema
+	return schema, nil
 }
 
 // New instantiates a new schema with the required stuffs.
@@ -135,6 +148,7 @@ func New(sources []*graphql.RemoteSchema, configs ...Option) (*Gateway, error) {
 		sources:        sources,
 		planner:        &MinQueriesPlanner{},
 		executor:       &ParallelExecutor{},
+		logger:         &DefaultLogger{},
 		merger:         MergerFunc(mergeSchemas),
 		queryFields:    []*QueryField{nodeField},
 		queryPlanCache: &NoQueryPlanCache{},
@@ -161,7 +175,10 @@ func New(sources []*graphql.RemoteSchema, configs ...Option) (*Gateway, error) {
 		}
 	}
 
-	internal := gateway.internalSchema()
+	internal, err := gateway.internalSchema()
+	if err != nil {
+		return nil, err
+	}
 	// find the field URLs before we merge schemas. We need to make sure to include
 	// the fields defined by the gateway's internal schema
 	urls := fieldURLs(sources, true).Concat(
@@ -277,7 +294,7 @@ func WithLocationPriorities(priorities []string) Option {
 // WithLogger returns an Option that sets the logger of the gateway
 func WithLogger(l Logger) Option {
 	return func(g *Gateway) {
-		log = l
+		g.logger = l
 	}
 }
 
