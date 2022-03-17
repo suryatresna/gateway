@@ -339,6 +339,8 @@ func mergeDirectivesEqual(previousDefinition *ast.DirectiveDefinition, newDefini
 
 	// make sure the 2 directives can be placed on the same locations
 	if err := mergeDirectiveLocationsEqual(previousDefinition.Locations, newDefinition.Locations); err != nil {
+		fmt.Println("[DEBUG] prev locations: ", previousDefinition.Locations)
+		fmt.Println("[DEBUG] new locations: ", newDefinition.Locations)
 		return fmt.Errorf("conflict in locations for directive %s. %s", previousDefinition.Name, err.Error())
 	}
 
